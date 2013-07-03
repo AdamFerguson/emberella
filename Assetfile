@@ -66,14 +66,40 @@ input "packages" do
   end
 end
 
-input "packages" do
-  # process all coffee files
-  match "emberella/lib/**/*.coffee" do
-    coffee_script
-  end
+ input "packages" do
+   # process all coffee files
+   match "emberella/lib/**/*.coffee" do
+     coffee_script
+   end
 
-  match "emberella/lib/**/*.js" do
-    concat "emberella.js"
+   match "emberella/lib/**/*.js" do
+     minispade :rewrite_requires => true, :string => true, :module_id_generator => proc { |input|
+       id = input.path.dup
+       id.sub!('/lib/', '/')
+       id.sub!(/\.js$/, '')
+       id.sub!(/\/main$/, '')
+       id
+     }
+
+     concat "emberella-spade.js"
+   end
+ end
+
+input "packages" do
+  match "emberella/lib/**/main.js" do
+    neuter(
+      :additional_dependencies => proc { |input|
+        Dir.glob(File.join(File.dirname(input.fullpath),'**','*.js'))
+      },
+      :path_transform => proc { |path, input|
+        package, path = path.split('/', 2)
+        current_package = input.path.split('/', 2)[0]
+        current_package == package && path ? File.join(package, "lib", "#{path}.js") : nil
+      },
+      :closure_wrap => true
+    ) do |filename|
+        File.join("modules/", filename.gsub('/lib/main.js', '.js'))
+      end
   end
 end
 
