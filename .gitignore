@@ -38,3 +38,4 @@ node_modules
 .vagrant
 tests/source/
 tests/emberella-tests.js
+vendor/bundle
